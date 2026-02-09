@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albert's List Calendar</title>
+    <link rel="stylesheet" href="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.css" />
+    <style>
+        #calendar {
+            height: 800px;
+        }
+    </style>
+</head>
+<body>
+    <div id="calendar"></div>
+
+    <!-- STEP 1: Define the function FIRST -->
+    <script>
+        // Define initCalendar BEFORE the library tries to call it
+        function initCalendar() {
+            console.log('TUI Calendar script loaded successfully, tui type:', typeof tui);
+
+            if (typeof tui === 'undefined') {
+                console.error('FATAL: tui object is still undefined.');
+                return;
+            }
+
+            // NOW it is safe to use 'tui'
+            const calendar = new tui.Calendar('#calendar', {
+                defaultView: 'month',
+                usageStatistics: false,
+                calendars: [{
+                    id: 'alberts-events',
+                    name: "Albert's List",
+                    backgroundColor: '#9e5fff',
+                    borderColor: '#9e5fff'
+                }]
+            });
+
+            calendar.render();
+
+            const today = new Date();
+            calendar.createSchedules([{
+                id: 'event1',
+                calendarId: 'alberts-events',
+                title: 'My First Event',
+                category: 'time',
+                start: today,
+                end: new Date(today.getTime() + (2 * 60 * 60 * 1000)),
+            }]);
+
+            console.log('Calendar created and rendered.');
+        }
+    </script>
+
+    <!-- STEP 2: Load the library, which will now find initCalendar -->
+    <script src="https://uicdn.toast.com/calendar/latest/toastui-calendar.min.js"
+            onload="initCalendar()"
+            onerror="console.error('Failed to load TUI Calendar library.')">
+    </script>
+
+</body>
+</html>
