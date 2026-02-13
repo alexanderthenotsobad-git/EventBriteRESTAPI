@@ -1,31 +1,44 @@
-// app.js - Using ES Modules
-// app.js - New import for local bundling
-import Calendar from './calendar-library.mjs';
-
-document.addEventListener('DOMContentLoaded', function () {
-    // ... the rest of your existing calendar setup code remains the same
+// app.js - Simple version, uses global tui.Calendar from CDN
+document.addEventListener('DOMContentLoaded', async function () {
     const calendarEl = document.getElementById('calendar');
-    const calendar = new Calendar(calendarEl, {
-        defaultView: 'month',
-        calendars: [
 
-            {
-                id: 'alberts-events',
-                name: "Albert's List",
-                color: '#ffffff',
-                bgColor: '#9e5fff',
-                borderColor: '#9e5fff'
-            }
-        ]
+    // Create calendar with tui.Calendar global (from CDN script tag)
+    const calendar = new tui.Calendar('#calendar', {
+        defaultView: 'month',
+        usageStatistics: false,
+        calendars: [{
+            id: 'alberts-events',
+            name: "Albert's List",
+            backgroundColor: '#9e5fff',
+            borderColor: '#9e5fff'
+        }]
     });
-    calendar.createEvents([
-        {
-            id: 'event1',
-            calendarId: 'alberts-events',
-            title: 'Sample Event from Eventbrite',
-            category: 'time',
-            start: '2025-12-25T10:00:00', // Changed to a future date for visibility
-            end: '2025-12-25T12:00:00',
+
+    calendar.render();
+
+    try {
+        // Fetch real events from your backend API
+        const response = await fetch('/api/events');
+        const events = await response.json();
+
+        if (events.length > 0) {
+            calendar.createSchedules(events);
+            console.log(`Loaded ${events.length} events from Eventbrite`);
+        } else {
+            console.log('No upcoming events found');
         }
-    ]);
+    } catch (error) {
+        console.error('Failed to load events:', error);
+
+        // Fallback: Show sample event so calendar isn't empty
+        const today = new Date();
+        calendar.createSchedules([{
+            id: 'sample',
+            calendarId: 'alberts-events',
+            title: 'Sample Event (API offline)',
+            category: 'time',
+            start: today,
+            end: new Date(today.getTime() + (2 * 60 * 60 * 1000)),
+        }]);
+    }
 });

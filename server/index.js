@@ -1,69 +1,36 @@
+import 'dotenv/config';
 import express from 'express';
 import axios from 'axios';
 
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Eventbrite OAuth credentials - you MUST set these as environment variables
-const CLIENT_ID = process.env.EVENTBRITE_CLIENT_ID;
-const CLIENT_SECRET = process.env.EVENTBRITE_CLIENT_SECRET;
-const REDIRECT_URI = process.env.EVENTBRITE_REDIRECT_URI;
-
-// In-memory token storage - REPLACE with Secret Manager in production
-let accessToken = null;
+// Your private token from Eventbrite - already working
+const EVENTBRITE_TOKEN = process.env.EVENTBRITE_TOKEN;
 
 app.use(express.static('../'));
 
-// 1. Initiate OAuth flow
-app.get('/auth/eventbrite', (req, res) => {
-  const authUrl = 'https://www.eventbrite.com/oauth/authorize';
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: CLIENT_ID,
-    redirect_uri: REDIRECT_URI
-  });
-  res.redirect(`${authUrl}?${params.toString()}`);
-});
-
-// 2. OAuth callback
-app.get('/oauth/eventbrite/callback', async (req, res) => {
-  const { code } = req.query;
-
-  if (!code) {
-    return res.status(400).send('Missing authorization code');
-  }
-
-  try {
-    const tokenResponse = await axios.post('https://www.eventbrite.com/oauth/token', {
-      code,
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET,
-      redirect_uri: REDIRECT_URI,
-      grant_type: 'authorization_code'
-    }, {
-      headers: { 'Content-Type': 'application/json' }
-    });
-
-    accessToken = tokenResponse.data.access_token;
-
-    res.send('Eventbrite authentication successful! You can close this window.');
-  } catch (error) {
-    console.error('OAuth error:', error.response?.data || error.message);
-    res.status(500).send('Authentication failed');
-  }
-});
-
-// 3. Fetch events from Eventbrite
+// Fetch events from Eventbrite using private token
+// Fetch events from Eventbrite using private token
 app.get('/api/events', async (req, res) => {
-  if (!accessToken) {
-    return res.status(401).json({ error: 'Not authenticated with Eventbrite' });
+  if (!EVENTBRITE_TOKEN) {
+    return res.status(500).json({ error: 'Eventbrite token not configured' });
   }
 
   try {
+    console.log('Fetching events from Eventbrite...');
+    console.log('Using token:', EVENTBRITE_TOKEN.substring(0, 5) + '...');
+
     const eventsResponse = await axios.get('https://www.eventbriteapi.com/v3/users/me/owned_events/', {
-      headers: { 'Authorization': `Bearer ${accessToken}` },
-      params: { expand: 'venue,organizer' }
+      headers: { 'Authorization': `Bearer ${EVENTBRITE_TOKEN}` },
+      params: {
+        expand: 'venue,organizer',
+        status: 'live'
+      }
     });
+
+    console.log('Eventbrite response status:', eventsResponse.status);
+    console.log('Number of events found:', eventsResponse.data.events?.length || 0);
 
     // Transform Eventbrite events to TUI Calendar format
     const calendarEvents = eventsResponse.data.events.map(event => ({
@@ -79,8 +46,16 @@ app.get('/api/events', async (req, res) => {
 
     res.json(calendarEvents);
   } catch (error) {
-    console.error('Event fetch error:', error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to fetch events' });
+    console.error('=== EVENTBRITE API ERROR ===');
+    console.error('Status:', error.response?.status);
+    console.error('Data:', JSON.stringify(error.response?.data, null, 2));
+    console.error('Message:', error.message);
+    console.error('=============================');
+
+    res.status(500).json({
+      error: 'Failed to fetch events',
+      details: error.response?.data || error.message
+    });
   }
 });
 
