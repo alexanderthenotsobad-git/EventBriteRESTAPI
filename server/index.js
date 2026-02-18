@@ -5,9 +5,8 @@ import eventbritePkg from 'eventbrite';
 const isDevelopment = process.env.NODE_ENV === 'development';
 const eventbrite = eventbritePkg.default;
 const app = express();
-const PORT = process.env.PORT || 8080;
-// Your private token from Eventbrite (in .env file)
-const EVENTBRITE_TOKEN = process.env.EVENTBRITE_TOKEN;
+const PORT = 8080
+const EVENTBRITE_TOKEN = "XHYVNU7I7YSF565FDQKB";
 console.log('🔍 eventbrite type:', typeof eventbrite, 'is function?', typeof eventbrite === 'function');
 
 // ----- CSP MIDDLEWARE (ADD THIS BLOCK) -----
