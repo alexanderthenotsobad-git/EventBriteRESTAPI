@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async function () {
         const events = await response.json();
 
         if (events.length > 0) {
-            calendar.createSchedules(events);
+            calendar.createEvents(events);
             console.log(`Loaded ${events.length} events from Eventbrite`);
         } else {
             console.log('No upcoming events found');
@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', async function () {
 
         // Fallback: Show sample event so calendar isn't empty
         const today = new Date();
-        calendar.createSchedules([{
+        calendar.createEvents([{
             id: 'sample',
             calendarId: 'alberts-events',
             title: 'Sample Event (API offline)',
