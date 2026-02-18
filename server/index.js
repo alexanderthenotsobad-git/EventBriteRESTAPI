@@ -2,12 +2,32 @@ import 'dotenv/config';
 import express from 'express';
 import eventbritePkg from 'eventbrite';
 
+const isDevelopment = process.env.NODE_ENV === 'development';
 const eventbrite = eventbritePkg.default;
 const app = express();
 const PORT = process.env.PORT || 8080;
 // Your private token from Eventbrite (in .env file)
 const EVENTBRITE_TOKEN = process.env.EVENTBRITE_TOKEN;
 console.log('🔍 eventbrite type:', typeof eventbrite, 'is function?', typeof eventbrite === 'function');
+
+// ----- CSP MIDDLEWARE (ADD THIS BLOCK) -----
+if (isDevelopment) {
+  // Disable CSP for local testing
+  app.use((req, res, next) => {
+    res.removeHeader("Content-Security-Policy");
+    next();
+  });
+} else {
+  // Proper CSP for production
+  app.use((req, res, next) => {
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; style-src 'self' 'unsafe-inline' https://uicdn.toast.com; script-src 'self' 'unsafe-inline' https://uicdn.toast.com; font-src 'self' data:; img-src 'self' data: https:;"
+    );
+    next();
+  });
+}
+// ----- END CSP MIDDLEWARE -----
 
 // Serve static frontend files
 app.use(express.static('../'));
