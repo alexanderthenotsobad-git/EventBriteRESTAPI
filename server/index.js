@@ -1,41 +1,44 @@
 import 'dotenv/config';
 import express from 'express';
-import axios from 'axios';
+import eventbritePkg from 'eventbrite';
 
+const eventbrite = eventbritePkg.default;
 const app = express();
 const PORT = process.env.PORT || 8080;
-
-// Your private token from Eventbrite - already working
+// Your private token from Eventbrite (in .env file)
 const EVENTBRITE_TOKEN = process.env.EVENTBRITE_TOKEN;
+console.log('🔍 eventbrite type:', typeof eventbrite, 'is function?', typeof eventbrite === 'function');
 
+// Serve static frontend files
 app.use(express.static('../'));
 
-// Fetch events from Eventbrite using private token
-// Fetch events from Eventbrite using private token
+// Fetch events from Eventbrite
 app.get('/api/events', async (req, res) => {
   if (!EVENTBRITE_TOKEN) {
+    console.error('❌ EVENTBRITE_TOKEN not configured in .env');
     return res.status(500).json({ error: 'Eventbrite token not configured' });
   }
 
   try {
-    console.log('Fetching events from Eventbrite...');
-    console.log('Using token:', EVENTBRITE_TOKEN.substring(0, 5) + '...');
+    // Create Eventbrite SDK instance with your token
+    const sdk = eventbrite({ token: EVENTBRITE_TOKEN });
 
-    const eventsResponse = await axios.get('https://www.eventbriteapi.com/v3/users/me/owned_events/', {
-      headers: { 'Authorization': `Bearer ${EVENTBRITE_TOKEN}` },
+    console.log('🔍 Fetching events from Eventbrite...');
+
+    // Fetch events - using explicit user ID from your earlier test
+    const eventsResponse = await sdk.request('/organizations/2992573527910/events/', {
       params: {
         expand: 'venue,organizer',
-        status: 'live'
+        status: 'live,started,ended'
       }
     });
 
-    console.log('Eventbrite response status:', eventsResponse.status);
-    console.log('Number of events found:', eventsResponse.data.events?.length || 0);
+    console.log(`✅ Found ${eventsResponse.events?.length || 0} events`);
 
     // Transform Eventbrite events to TUI Calendar format
-    const calendarEvents = eventsResponse.data.events.map(event => ({
+    const calendarEvents = eventsResponse.events.map(event => ({
       id: event.id,
-      calendarId: 'alberts-events',
+      calendarId: 'alberts-events',  // Make sure this matches your frontend calendarId
       title: event.name.text,
       category: 'time',
       start: event.start.utc,
@@ -46,11 +49,10 @@ app.get('/api/events', async (req, res) => {
 
     res.json(calendarEvents);
   } catch (error) {
-    console.error('=== EVENTBRITE API ERROR ===');
+    console.error('❌ Eventbrite API error:');
     console.error('Status:', error.response?.status);
-    console.error('Data:', JSON.stringify(error.response?.data, null, 2));
+    console.error('Data:', error.response?.data);
     console.error('Message:', error.message);
-    console.error('=============================');
 
     res.status(500).json({
       error: 'Failed to fetch events',
@@ -60,5 +62,6 @@ app.get('/api/events', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`📅 Test endpoint: http://localhost:${PORT}/api/events`);
 });
