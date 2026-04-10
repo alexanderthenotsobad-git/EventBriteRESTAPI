@@ -1,23 +1,18 @@
 import 'dotenv/config';
 import express from 'express';
-import eventbritePkg from 'eventbrite';
+import axios from 'axios';
 
 const isDevelopment = process.env.NODE_ENV === 'development';
-const eventbrite = eventbritePkg.default;
 const app = express();
-const PORT = 8080
-const EVENTBRITE_TOKEN = "XHYVNU7I7YSF565FDQKB";
-console.log('🔍 eventbrite type:', typeof eventbrite, 'is function?', typeof eventbrite === 'function');
+const PORT = 8080;
 
-// ----- CSP MIDDLEWARE (ADD THIS BLOCK) -----
+// ----- CSP MIDDLEWARE -----
 if (isDevelopment) {
-  // Disable CSP for local testing
   app.use((req, res, next) => {
     res.removeHeader("Content-Security-Policy");
     next();
   });
 } else {
-  // Proper CSP for production
   app.use((req, res, next) => {
     res.setHeader(
       "Content-Security-Policy",
@@ -31,53 +26,27 @@ if (isDevelopment) {
 // Serve static frontend files
 app.use(express.static('../'));
 
-// Fetch events from Eventbrite
+// Fetch events from Apidog mock server
 app.get('/api/events', async (req, res) => {
-  if (!EVENTBRITE_TOKEN) {
-    console.error('❌ EVENTBRITE_TOKEN not configured in .env');
-    return res.status(500).json({ error: 'Eventbrite token not configured' });
-  }
-
   try {
-    // Create Eventbrite SDK instance with your token
-    const sdk = eventbrite({ token: EVENTBRITE_TOKEN });
+    console.log('🔍 Fetching events from Apidog mock server...');
 
-    console.log('🔍 Fetching events from Eventbrite...');
+    const mockResponse = await axios.get('https://mock.apidog.com/m1/1226630-1222810-default/events');
 
-    // Fetch events - using explicit user ID from your earlier test
-    const eventsResponse = await axios.get('https://mock.apidog.com/m1/1226630-1222810-default/events');
-    params: {
-      expand: 'venue,organizer',
-        status: 'live,started,ended'
-    }
-  });
+    console.log(`✅ Mock server returned ${mockResponse.data.length} events`);
 
-console.log(`✅ Found ${eventsResponse.events?.length || 0} events`);
-
-// Transform Eventbrite events to TUI Calendar format
-const calendarEvents = eventsResponse.events.map(event => ({
-  id: event.id,
-  calendarId: 'alberts-events',  // Make sure this matches your frontend calendarId
-  title: event.name.text,
-  category: 'time',
-  start: event.start.utc,
-  end: event.end.utc,
-  location: event.venue?.name || 'Online',
-  description: event.description?.text || ''
-}));
-
-res.json(calendarEvents);
+    // The mock data is already in the format your frontend expects
+    res.json(mockResponse.data);
   } catch (error) {
-  console.error('❌ Eventbrite API error:');
-  console.error('Status:', error.response?.status);
-  console.error('Data:', error.response?.data);
-  console.error('Message:', error.message);
+    console.error('❌ Mock API error:');
+    console.error('Status:', error.response?.status);
+    console.error('Message:', error.message);
 
-  res.status(500).json({
-    error: 'Failed to fetch events',
-    details: error.response?.data || error.message
-  });
-}
+    res.status(500).json({
+      error: 'Failed to fetch events from mock server',
+      details: error.message
+    });
+  }
 });
 
 app.listen(PORT, () => {
