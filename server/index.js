@@ -45,39 +45,39 @@ app.get('/api/events', async (req, res) => {
     console.log('🔍 Fetching events from Eventbrite...');
 
     // Fetch events - using explicit user ID from your earlier test
-    const eventsResponse = await sdk.request('/organizations/2992573527910/events/', {
-      params: {
-        expand: 'venue,organizer',
+    const eventsResponse = await axios.get('https://mock.apidog.com/m1/1226630-1222810-default/events');
+    params: {
+      expand: 'venue,organizer',
         status: 'live,started,ended'
-      }
-    });
+    }
+  });
 
-    console.log(`✅ Found ${eventsResponse.events?.length || 0} events`);
+console.log(`✅ Found ${eventsResponse.events?.length || 0} events`);
 
-    // Transform Eventbrite events to TUI Calendar format
-    const calendarEvents = eventsResponse.events.map(event => ({
-      id: event.id,
-      calendarId: 'alberts-events',  // Make sure this matches your frontend calendarId
-      title: event.name.text,
-      category: 'time',
-      start: event.start.utc,
-      end: event.end.utc,
-      location: event.venue?.name || 'Online',
-      description: event.description?.text || ''
-    }));
+// Transform Eventbrite events to TUI Calendar format
+const calendarEvents = eventsResponse.events.map(event => ({
+  id: event.id,
+  calendarId: 'alberts-events',  // Make sure this matches your frontend calendarId
+  title: event.name.text,
+  category: 'time',
+  start: event.start.utc,
+  end: event.end.utc,
+  location: event.venue?.name || 'Online',
+  description: event.description?.text || ''
+}));
 
-    res.json(calendarEvents);
+res.json(calendarEvents);
   } catch (error) {
-    console.error('❌ Eventbrite API error:');
-    console.error('Status:', error.response?.status);
-    console.error('Data:', error.response?.data);
-    console.error('Message:', error.message);
+  console.error('❌ Eventbrite API error:');
+  console.error('Status:', error.response?.status);
+  console.error('Data:', error.response?.data);
+  console.error('Message:', error.message);
 
-    res.status(500).json({
-      error: 'Failed to fetch events',
-      details: error.response?.data || error.message
-    });
-  }
+  res.status(500).json({
+    error: 'Failed to fetch events',
+    details: error.response?.data || error.message
+  });
+}
 });
 
 app.listen(PORT, () => {
