@@ -1,6 +1,11 @@
-// app.js - Simple version, uses global tui.Calendar from CDN
+// app.js - Calendar with navigation and title
+let calendar;
+let currentDate = new Date();
+let allEvents = [];
+
 document.addEventListener('DOMContentLoaded', async function () {
-    const calendar = new tui.Calendar('#calendar', {
+    // Initialize calendar
+    calendar = new tui.Calendar('#calendar', {
         defaultView: 'month',
         usageStatistics: false,
         calendars: [{
@@ -11,20 +16,69 @@ document.addEventListener('DOMContentLoaded', async function () {
         }]
     });
 
-    calendar.render();
+    // Load all events first
+    await loadAllEvents();
 
+    // Update month display
+    updateMonthDisplay(currentDate);
+
+    // Display events for current month
+    displayEventsForMonth(currentDate);
+
+    // Set up navigation buttons
+    document.getElementById('prevMonthBtn').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() - 1);
+        updateMonthDisplay(currentDate);
+        calendar.setDate(currentDate);
+        displayEventsForMonth(currentDate);
+    });
+
+    document.getElementById('nextMonthBtn').addEventListener('click', () => {
+        currentDate.setMonth(currentDate.getMonth() + 1);
+        updateMonthDisplay(currentDate);
+        calendar.setDate(currentDate);
+        displayEventsForMonth(currentDate);
+    });
+
+    calendar.render();
+});
+
+function updateMonthDisplay(date) {
+    const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'];
+    const monthYearDisplay = document.getElementById('monthYearDisplay');
+    monthYearDisplay.textContent = `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+}
+
+async function loadAllEvents() {
     try {
         const response = await fetch('/api/events');
-        const events = await response.json();
-
-        if (events.length > 0) {
-            // ✅ Use createEvents, NOT createSchedules
-            calendar.createEvents(events);
-            console.log(`Loaded ${events.length} events from API`);
-        } else {
-            console.log('No events found');
-        }
+        allEvents = await response.json();
+        console.log(`Loaded ${allEvents.length} total events`);
     } catch (error) {
         console.error('Failed to load events:', error);
+        allEvents = [];
     }
-});
+}
+
+function displayEventsForMonth(date) {
+    // Clear existing events
+    calendar.clear();
+
+    // Get year and month of current view (month is 0-indexed)
+    const viewYear = date.getFullYear();
+    const viewMonth = date.getMonth();
+
+    // Filter events that occur in the current month
+    const monthEvents = allEvents.filter(event => {
+        const eventDate = new Date(event.start);
+        return eventDate.getFullYear() === viewYear && eventDate.getMonth() === viewMonth;
+    });
+
+    if (monthEvents.length > 0) {
+        calendar.createEvents(monthEvents);
+        console.log(`Displayed ${monthEvents.length} events for ${date.toLocaleString('default', { month: 'long' })} ${viewYear}`);
+    } else {
+        console.log(`No events for ${date.toLocaleString('default', { month: 'long' })} ${viewYear}`);
+    }
+}
