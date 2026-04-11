@@ -29,11 +29,11 @@ if (isDevelopment) {
 
 // Serve static files from the parent directory (where index.html and app.js live)
 // The __dirname is /app/server, so we go up one level to /app
-app.use(express.static(path.join(__dirname, '..')));
+app.use(express.static((__dirname)));
 
 // Explicit route for root
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
+  res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // API endpoint
