@@ -1,12 +1,17 @@
 import 'dotenv/config';
 import express from 'express';
+import { fileURLToPath } from 'url';
+import path from 'path';
 import axios from 'axios';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const isDevelopment = process.env.NODE_ENV === 'development';
 const app = express();
-const PORT = 8080;
+const PORT = parseInt(process.env.PORT || '8080', 10);
 
-// ----- CSP MIDDLEWARE -----
+// CSP Middleware
 if (isDevelopment) {
   app.use((req, res, next) => {
     res.removeHeader("Content-Security-Policy");
@@ -21,35 +26,32 @@ if (isDevelopment) {
     next();
   });
 }
-// ----- END CSP MIDDLEWARE -----
 
-// Serve static frontend files
-app.use(express.static('../'));
+// Serve static files from the parent directory (where index.html and app.js live)
+app.use(express.static(path.join(__dirname, '..')));
 
-// Fetch events from Apidog mock server
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
+// API endpoint
 app.get('/api/events', async (req, res) => {
   try {
-    console.log('🔍 Fetching events from Apidog mock server...');
-
     const mockResponse = await axios.get('https://mock.apidog.com/m1/1226630-1222810-default/events');
-
-    console.log(`✅ Mock server returned ${mockResponse.data.length} events`);
-
-    // The mock data is already in the format your frontend expects
     res.json(mockResponse.data);
   } catch (error) {
-    console.error('❌ Mock API error:');
-    console.error('Status:', error.response?.status);
-    console.error('Message:', error.message);
-
-    res.status(500).json({
-      error: 'Failed to fetch events from mock server',
-      details: error.message
-    });
+    console.error('Mock API error:', error.message);
+    res.status(500).json({ error: 'Failed to fetch events', details: error.message });
   }
 });
 
+// Root route - explicitly serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
+});
+
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-  console.log(`📅 Test endpoint: http://localhost:${PORT}/api/events`);
+  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`📅 Test endpoint: /api/events`);
 });
