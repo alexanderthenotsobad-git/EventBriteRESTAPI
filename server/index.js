@@ -28,11 +28,12 @@ if (isDevelopment) {
 }
 
 // Serve static files from the parent directory (where index.html and app.js live)
+// The __dirname is /app/server, so we go up one level to /app
 app.use(express.static(path.join(__dirname, '..')));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).send('OK');
+// Explicit route for root
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 // API endpoint
@@ -44,11 +45,6 @@ app.get('/api/events', async (req, res) => {
     console.error('Mock API error:', error.message);
     res.status(500).json({ error: 'Failed to fetch events', details: error.message });
   }
-});
-
-// Root route - explicitly serve index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 app.listen(PORT, () => {
