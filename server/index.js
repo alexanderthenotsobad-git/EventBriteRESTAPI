@@ -3,6 +3,7 @@ import express from 'express';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import axios from 'axios';
+import favicon from 'serve-favicon';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -10,6 +11,8 @@ const __dirname = path.dirname(__filename);
 const isDevelopment = process.env.NODE_ENV === 'development';
 const app = express();
 const PORT = parseInt(process.env.PORT || '8080', 10);
+
+app.use(favicon(path.join(__dirname, 'favicon.ico')));
 
 // CSP Middleware
 if (isDevelopment) {
